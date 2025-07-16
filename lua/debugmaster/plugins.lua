@@ -107,6 +107,7 @@ plugins.osv_integration = {
   enabled = false,
   activate = function()
     local dap = require("dap")
+    local instance_n = 1
     dap.adapters.debugmasterosv = (function()
       local id = "nvimdebug"
       local buf = -1
@@ -146,6 +147,8 @@ plugins.osv_integration = {
         )
         vim.cmd(cmd)
         buf = vim.api.nvim_get_current_buf()
+        api.nvim_buf_set_name(buf, "nvim-debug-" .. instance_n)
+        instance_n = instance_n + 1
         vim.api.nvim_win_close(0, true)
         dap.listeners.after.initialize[id] = function()
           local state = require("debugmaster.state")
