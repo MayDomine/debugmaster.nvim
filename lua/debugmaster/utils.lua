@@ -2,6 +2,68 @@ local api = vim.api
 
 local M = {}
 
+local function get_widget_cfg()
+  local cfg = require("debugmaster.cfg")
+  return cfg.widgets or {}
+end
+
+local function open_dap_widget_with_snacks(widget, opts)
+  local widgets = require("dap.ui.widgets")
+  local ok, snacks = pcall(require, "snacks")
+  if not ok or not snacks or not snacks.win then
+    return widgets.cursor_float(widget, opts and opts.winopts or nil)
+  end
+
+  local cfg = get_widget_cfg()
+  local snacks_cfg = cfg.snacks or {}
+  local default_win = {
+    position = "float",
+    border = "rounded",
+    backdrop = false,
+    width = 0.5,
+    height = 0.4,
+    minimal = true,
+    enter = true,
+    wo = {
+      wrap = false,
+      number = false,
+      relativenumber = false,
+      signcolumn = "no",
+    },
+  }
+
+  local win_opts = vim.tbl_deep_extend(
+    "force",
+    {},
+    default_win,
+    snacks_cfg.win or {},
+    (opts and opts.win) or {}
+  )
+  if opts and opts.title then
+    win_opts.title = opts.title
+  end
+
+  local new_win = function(buf)
+    local opts_with_buf = vim.tbl_deep_extend("force", {}, win_opts, { buf = buf })
+    local win = snacks.win(opts_with_buf)
+    return win.win
+  end
+
+  local view = widgets.builder(widget)
+    .new_win(widgets.with_resize(new_win))
+    .build()
+  view.open()
+  return view
+end
+
+function M.open_dap_widget(widget, opts)
+  local cfg = get_widget_cfg()
+  if cfg.use_snacks then
+    return open_dap_widget_with_snacks(widget, opts)
+  end
+  return require("dap.ui.widgets").cursor_float(widget, opts and opts.winopts or nil)
+end
+
 -- https://github.com/mfussenegger/nvim-dap/issues/792
 ---@param dir "next"|"prev"
 function M.gotoBreakpoint(dir)
@@ -89,6 +151,27 @@ function M.open_floating_window(buf, opts)
     width = math.max(width, vim.fn.strdisplaywidth(line), opts.min_width or 1)
   end
   local height = math.max(#lines, 1)
+
+  local cfg = get_widget_cfg()
+  if cfg.use_snacks then
+    local ok, snacks = pcall(require, "snacks")
+    if ok and snacks and snacks.win then
+      local win = snacks.win({
+        buf = buf,
+        relative = "cursor",
+        position = "float",
+        row = 0,
+        col = 0,
+        width = width,
+        height = height + (opts.additional_height or 0),
+        border = "rounded",
+        minimal = true,
+        enter = true,
+        focusable = true,
+      })
+      return win.win
+    end
+  end
 
   ---@type vim.api.keyset.win_config
   local win_config = {
