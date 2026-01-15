@@ -34,9 +34,9 @@ local move_debugger_group = {
       desc = "Step into (mine deeper)",
     },
     {
-      key = "q",
+      key = "O",
       action = function() require("dap").step_out() end,
-      desc = "Step out ([q]uit current stack frame)",
+      desc = "Step out ([O]ut of current stack frame)",
     },
     {
       key = "c",
@@ -104,14 +104,6 @@ local sidepanel = {
         state.sidepanel:set_active_with_open(state.help)
       end,
       desc = "Open help",
-    },
-    {
-      key = "W",
-      action = function()
-        local state = require("debugmaster.state")
-        state.sidepanel:set_active_with_open(state.watches)
-      end,
-      desc = "Open watches",
     },
     {
       key = "}",
@@ -210,6 +202,22 @@ local float_widgets = {
       end,
       desc = "Inspect variable or visually selected expression",
     },
+  }
+}
+
+---@type dm.MappingsGroup
+local watches_group = {
+  name = "WATCHES",
+  hlgroup = "Keyword",
+  mappings = {
+    {
+      key = "W",
+      action = function()
+        local state = require("debugmaster.state")
+        state.sidepanel:set_active_with_open(state.watches)
+      end,
+      desc = "Open watches panel",
+    },
     {
       key = "dw",
       modes = { "n", "v" },
@@ -224,8 +232,17 @@ local float_widgets = {
         state.watches:add_cursor_expr(expr)
         state.sidepanel:set_active_with_open(state.watches)
       end,
-      desc = "Add cursor variable/selection to watches",
+      desc = "Add cursor word/selection to watches",
     },
+    -- Watches panel keymaps (for Help display only, actual keymaps in Watches.lua)
+    { key = "a", desc = "(in panel) Add expression (append)" },
+    { key = "i", desc = "(in panel) Insert expression (prepend)" },
+    { key = "d", desc = "(in panel) Delete expression" },
+    { key = "e", desc = "(in panel) Edit expression" },
+    { key = "s", desc = "(in panel) Set variable value" },
+    { key = "c", desc = "(in panel) Copy expression" },
+    { key = "<CR>", desc = "(in panel) Expand/collapse" },
+    { key = "r", desc = "(in panel) Refresh" },
   }
 }
 
@@ -356,6 +373,7 @@ M.groups = {
   breakpoings_group,
   sidepanel,
   float_widgets,
+  watches_group,
   misc_group,
 }
 

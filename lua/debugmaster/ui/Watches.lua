@@ -101,7 +101,11 @@ end
 
 function Watches:_render_empty()
   api.nvim_set_option_value("modifiable", true, { buf = self.buf })
-  api.nvim_buf_set_lines(self.buf, 0, -1, false, { "No expressions. Press 'a' to add." })
+  api.nvim_buf_set_lines(self.buf, 0, -1, false, {
+    "No expressions.",
+    "",
+    "Press 'a' to add, '?' for help."
+  })
   api.nvim_set_option_value("modifiable", false, { buf = self.buf })
 end
 
@@ -625,7 +629,6 @@ function Watches:add_cursor_expr(expr)
     coroutine.wrap(function()
       if self:add_watch_expr(expression, true, true) then
         self:render()
-        vim.notify("Added watch: " .. expression)
       end
     end)()
   else
