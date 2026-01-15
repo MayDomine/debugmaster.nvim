@@ -296,7 +296,7 @@ function Watches:_new_expression(append)
   vim.ui.input({ prompt = "Expression: " }, function(input)
     if input then
       coroutine.wrap(function()
-        if self:add_watch_expr(input, true, append) then
+        if self:add_watch_expr(input, false, append) then
           self:render()
         end
       end)()
@@ -482,12 +482,12 @@ function Watches:_show_variables(children, reference, line, depth)
 
     -- Can't have linebreaks with nvim_buf_set_lines
     local trimmed_content = content:gsub("%s+", " ")
-    local indented_content = string.rep("  ", depth) .. trimmed_content
+    local indented_content = string.rep("\t", depth) .. trimmed_content
 
     api.nvim_buf_set_lines(self.buf, line, line, true, { indented_content })
 
-    -- Highlight variable name
-    local name_start = depth * 2
+    -- Highlight variable name (tab counts as 1 char in buffer)
+    local name_start = depth
     local name_end = name_start + #variable.name
     api.nvim_buf_add_highlight(self.buf, self.ns_id, "Identifier", line, name_start, name_end)
 
@@ -510,7 +510,7 @@ function Watches:_show_variables(children, reference, line, depth)
     }
 
     if child.err then
-      local err_content = string.rep("  ", depth + 1) .. tostring(child.err)
+      local err_content = string.rep("\t", depth + 1) .. tostring(child.err)
       api.nvim_buf_set_lines(self.buf, line, line, true, { err_content })
       api.nvim_buf_add_highlight(self.buf, self.ns_id, "DiagnosticError", line, 0, #err_content)
       line = line + 1
@@ -627,7 +627,7 @@ function Watches:add_cursor_expr(expr)
 
   if expression and #expression > 0 then
     coroutine.wrap(function()
-      if self:add_watch_expr(expression, true, true) then
+      if self:add_watch_expr(expression, false, true) then
         self:render()
       end
     end)()
