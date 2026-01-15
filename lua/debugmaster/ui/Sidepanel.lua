@@ -104,6 +104,7 @@ function Sidepanel:open(opts)
   self.float = float
   api.nvim_set_option_value("number", false, { win = self.win })
   api.nvim_set_option_value("relativenumber", false, { win = self.win })
+  api.nvim_set_option_value("wrap", false, { win = self.win })
   if self.float then
     utils.register_to_close_on_leave(self.win)
   end
