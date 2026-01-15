@@ -2,7 +2,7 @@
 local cfg = {
   widgets = {
     -- Use snacks.nvim to render DAP widgets with borders and styling.
-    use_snacks = false,
+    use_snacks = true,
     snacks = {
       win = {
         position = "float",
