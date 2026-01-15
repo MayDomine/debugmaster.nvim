@@ -106,6 +106,14 @@ local sidepanel = {
       desc = "Open help",
     },
     {
+      key = "W",
+      action = function()
+        local state = require("debugmaster.state")
+        state.sidepanel:set_active_with_open(state.watches)
+      end,
+      desc = "Open watches",
+    },
+    {
       key = "}",
       action = function()
         local state = require("debugmaster.state")
@@ -201,6 +209,22 @@ local float_widgets = {
         utils.register_to_close_on_leave(api.nvim_get_current_win())
       end,
       desc = "Inspect variable or visually selected expression",
+    },
+    {
+      key = "dw",
+      modes = { "n", "v" },
+      action = function()
+        local state = require("debugmaster.state")
+        local mode = vim.fn.mode()
+        local expr
+        if mode == 'v' or mode == 'V' then
+          vim.cmd('normal! "vy')
+          expr = vim.fn.getreg('v')
+        end
+        state.watches:add_cursor_expr(expr)
+        state.sidepanel:set_active_with_open(state.watches)
+      end,
+      desc = "Add cursor variable/selection to watches",
     },
   }
 }
