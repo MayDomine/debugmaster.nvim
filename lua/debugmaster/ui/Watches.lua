@@ -37,6 +37,7 @@ function Watches.new()
 
   self:_setup_keymaps()
   self:_setup_autocmds()
+  self:_setup_dap_listeners()
   self:_render_empty()
 
   return self
@@ -97,6 +98,50 @@ function Watches:_setup_autocmds()
       self:refresh()
     end)
   })
+end
+
+function Watches:_setup_dap_listeners()
+  local dap = require("dap")
+
+  -- Track the last frame_id used for evaluation
+  self._last_frame_id = nil
+
+  -- Listen for stackTrace response to detect frame changes
+  -- This fires when user navigates frames (up/down) or after stopping
+  dap.listeners.after.stackTrace["dm_watches"] = function(session)
+    if not session then
+      return
+    end
+
+    local current_frame_id = session.current_frame and session.current_frame.id
+
+    -- Only refresh if frame actually changed and we have watched expressions
+    if current_frame_id ~= self._last_frame_id and not vim.tbl_isempty(self.watched_expressions) then
+      self._last_frame_id = current_frame_id
+      vim.schedule(function()
+        self:refresh()
+      end)
+    end
+  end
+
+  -- Also listen for stopped event to ensure watches are refreshed when stepping
+  dap.listeners.after.event_stopped["dm_watches"] = function(session)
+    if session and not vim.tbl_isempty(self.watched_expressions) then
+      self._last_frame_id = session.current_frame and session.current_frame.id
+      vim.schedule(function()
+        self:refresh()
+      end)
+    end
+  end
+
+  -- Clean up frame tracking when session ends
+  dap.listeners.before.event_terminated["dm_watches"] = function()
+    self._last_frame_id = nil
+  end
+
+  dap.listeners.before.disconnect["dm_watches"] = function()
+    self._last_frame_id = nil
+  end
 end
 
 function Watches:_render_empty()
@@ -611,17 +656,20 @@ function Watches:refresh()
 end
 
 --- Add the word/expression under cursor from any buffer to watches
----@param expr? string Optional expression, if nil will use word under cursor
+---@param expr? string Optional expression, if nil will use expression under cursor
 function Watches:add_cursor_expr(expr)
   local expression = expr
   if not expression then
     -- Try to get visual selection first
     local mode = vim.fn.mode()
     if mode == 'v' or mode == 'V' then
-      vim.cmd('normal! "vy')
-      expression = vim.fn.getreg('v')
+      -- Exit visual mode to get accurate marks
+      local keys = api.nvim_replace_termcodes("<Esc>", true, true, true)
+      api.nvim_feedkeys(keys, "x", false)
+      expression = self:_get_visual_selection()
     else
-      expression = vim.fn.expand("<cword>")
+      -- Use <cexpr> to capture full C-style expressions like abc[12], foo.bar, etc.
+      expression = vim.fn.expand("<cexpr>")
     end
   end
 
@@ -634,6 +682,39 @@ function Watches:add_cursor_expr(expr)
   else
     vim.notify("No expression to add")
   end
+end
+
+---@return string
+function Watches:_get_visual_selection()
+  local start = vim.fn.getpos("'<")
+  local finish = vim.fn.getpos("'>")
+
+  local start_line, start_col = start[2], start[3]
+  local finish_line, finish_col = finish[2], finish[3]
+
+  -- Swap if selection is backwards
+  if start_line > finish_line or (start_line == finish_line and start_col > finish_col) then
+    start_line, start_col, finish_line, finish_col = finish_line, finish_col, start_line, start_col
+  end
+
+  local lines = vim.fn.getline(start_line, finish_line)
+  if #lines == 0 then
+    return ""
+  end
+
+  -- Handle single line case
+  if #lines == 1 then
+    return vim.trim(string.sub(lines[1], start_col, finish_col))
+  end
+
+  -- Multi-line: trim first and last line boundaries
+  lines[1] = string.sub(lines[1], start_col)
+  lines[#lines] = string.sub(lines[#lines], 1, finish_col)
+
+  -- Join and trim whitespace
+  return vim.iter(lines)
+      :map(function(line) return vim.trim(line) end)
+      :fold("", function(acc, line) return acc .. line end)
 end
 
 return Watches
