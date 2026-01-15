@@ -31,18 +31,20 @@ local function save_original_settings()
 
   for _, group in ipairs(groups) do
     for _, mapping in ipairs(group.mappings) do
-      for _, mode in ipairs(mapping.modes or { "n" }) do
-        local key = mapping.key
-        if not originals[mode] then
-          originals[mode] = {}
+      if mapping.action then
+        for _, mode in ipairs(mapping.modes or { "n" }) do
+          local key = mapping.key
+          if not originals[mode] then
+            originals[mode] = {}
+          end
+          local orig = lhs_to_map[mode][key] or {}
+          originals[mode][key] = {
+            callback = orig.callback,
+            rhs = orig.rhs,
+            desc = orig.desc,
+            silent = orig.silent,
+          }
         end
-        local orig = lhs_to_map[mode][key] or {}
-        originals[mode][key] = {
-          callback = orig.callback,
-          rhs = orig.rhs,
-          desc = orig.desc,
-          silent = orig.silent,
-        }
       end
     end
   end
@@ -62,8 +64,10 @@ M.enable = (function()
     for _, group in ipairs(groups) do
       for _, mapping in ipairs(group.mappings) do
         local action = mapping.action
-        for _, mode in ipairs(mapping.modes or { "n" }) do
-          vim.keymap.set(mode, mapping.key, action, { nowait = mapping.nowait })
+        if action then
+          for _, mode in ipairs(mapping.modes or { "n" }) do
+            vim.keymap.set(mode, mapping.key, action, { nowait = mapping.nowait })
+          end
         end
       end
     end
@@ -78,14 +82,16 @@ function M.disable()
   active = false
   for _, group in ipairs(groups) do
     for _, mapping in ipairs(group.mappings) do
-      local key = mapping.key
-      for _, mode in ipairs(mapping.modes or { "n" }) do
-        local orig = originals[mode][key]
-        local rhs = orig.callback or orig.rhs or key
-        vim.keymap.set(mode, key, rhs, {
-          desc = orig.desc,
-          silent = orig.silent,
-        })
+      if mapping.action then
+        local key = mapping.key
+        for _, mode in ipairs(mapping.modes or { "n" }) do
+          local orig = originals[mode][key]
+          local rhs = orig.callback or orig.rhs or key
+          vim.keymap.set(mode, key, rhs, {
+            desc = orig.desc,
+            silent = orig.silent,
+          })
+        end
       end
     end
   end
