@@ -219,7 +219,7 @@ local watches_group = {
       desc = "Open watches panel",
     },
     {
-      key = "dw",
+      key = "dp",
       modes = { "n", "v" },
       action = function()
         local state = require("debugmaster.state")
