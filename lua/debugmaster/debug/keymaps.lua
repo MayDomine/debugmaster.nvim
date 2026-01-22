@@ -293,6 +293,13 @@ local misc_group = {
   hlgroup = "TYPE",
   mappings = {
     {
+      key = "q",
+      action = function()
+        require("debugmaster.debug.mode").disable()
+      end,
+      desc = "Exit debug mode (back to normal mode)",
+    },
+    {
       key = "dr",
       desc = "Restart the current session or rerun last if none",
       action = function()
