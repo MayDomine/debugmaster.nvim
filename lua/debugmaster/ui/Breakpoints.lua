@@ -118,7 +118,6 @@ function Breakpoints.new()
     if node then
       if node.bpoint then
         local bp = node.bpoint
-        breakpoints.remove(bp.buf, bp.line)
         vim.cmd("q")
         vim.cmd("buffer " .. bp.buf)
         vim.cmd("normal " .. bp.line .. "G")
