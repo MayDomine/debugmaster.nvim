@@ -74,6 +74,16 @@ dm.keys.get("x").key = "y" -- remap x key in debug mode to y
 dm.plugins.cursor_hl.enabled = false
 dm.plugins.ui_auto_toggle.enabled = false
 
+-- Use snacks.nvim to render DAP float widgets (df/dt/ds/db) with borders/styles
+-- Requires folke/snacks.nvim
+dm.cfg.widgets.use_snacks = true
+dm.cfg.widgets.snacks.win = {
+  border = "rounded",
+  width = 0.6,
+  height = 0.5,
+  backdrop = false,
+}
+
 -- Changing debug mode cursor hl
 -- Debug mode cursor color controlled by "dCursor" highlight group
 -- so to change it you can use the following code

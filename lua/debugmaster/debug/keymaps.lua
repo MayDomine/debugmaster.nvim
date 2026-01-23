@@ -149,7 +149,7 @@ local float_widgets = {
       key = "df",
       action = function()
         local widgets = require("dap.ui.widgets")
-        pcall(widgets.cursor_float, widgets.frames)
+        pcall(utils.open_dap_widget, widgets.frames, { title = "Frames" })
         utils.register_to_close_on_leave(api.nvim_get_current_win())
       end,
       desc = "Frames widget"
@@ -158,7 +158,7 @@ local float_widgets = {
       key = "dt",
       action = function()
         local widgets = require("dap.ui.widgets")
-        pcall(widgets.cursor_float, widgets.threads)
+        pcall(utils.open_dap_widget, widgets.threads, { title = "Threads" })
         utils.register_to_close_on_leave(api.nvim_get_current_win())
       end,
       desc = "Threads widget"
@@ -167,7 +167,7 @@ local float_widgets = {
       key = "ds",
       action = function()
         local widgets = require("dap.ui.widgets")
-        local ok, sessions = pcall(widgets.cursor_float, widgets.sessions)
+        local ok, sessions = pcall(utils.open_dap_widget, widgets.sessions, { title = "Sessions" })
         if not ok then
           return
         end
@@ -219,7 +219,7 @@ local watches_group = {
       desc = "Open watches panel",
     },
     {
-      key = "dw",
+      key = "dp",
       modes = { "n", "v" },
       action = function()
         local state = require("debugmaster.state")
@@ -292,6 +292,13 @@ local misc_group = {
   name = "MISCELANOUS",
   hlgroup = "TYPE",
   mappings = {
+    {
+      key = "q",
+      action = function()
+        require("debugmaster.debug.mode").disable()
+      end,
+      desc = "Exit debug mode (back to normal mode)",
+    },
     {
       key = "dr",
       desc = "Restart the current session or rerun last if none",

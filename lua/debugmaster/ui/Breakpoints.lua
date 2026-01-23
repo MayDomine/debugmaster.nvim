@@ -38,7 +38,7 @@ end
 function BreakpointNode:get_repr()
   if not self.bpoints and not self.bpoint then
     local help = {
-      { { "t - remove breakpoint or all breakpoints in the file", "Comment" } },
+      { { "d - remove breakpoint or all breakpoints in the file", "Comment" } },
       { { "c - change breakpoint condition", "Comment" } }
     }
     return { { "Breakpoints", "Exception" } }, help
@@ -87,7 +87,7 @@ function Breakpoints.new()
   end, { buffer = self.buf, nowait = true })
 
 
-  vim.keymap.set("n", "t", function()
+  vim.keymap.set("n", "d", function()
     local line = api.nvim_win_get_cursor(0)[1] - 1
     ---@type dm.BreakpointNode?
     local node = self._tree:node_by_line(line)
@@ -118,7 +118,6 @@ function Breakpoints.new()
     if node then
       if node.bpoint then
         local bp = node.bpoint
-        breakpoints.remove(bp.buf, bp.line)
         vim.cmd("q")
         vim.cmd("buffer " .. bp.buf)
         vim.cmd("normal " .. bp.line .. "G")
@@ -128,6 +127,69 @@ function Breakpoints.new()
 
   dap.listeners.after.setBreakpoints["debugmaster"] = function()
     self._tree:render()
+  end
+
+  -- Helper to check if breakpoints buffer is visible
+  local function is_buf_visible()
+    for _, win in ipairs(api.nvim_list_wins()) do
+      if api.nvim_win_get_buf(win) == self.buf then
+        return true
+      end
+    end
+    return false
+  end
+
+  -- Refresh when breakpoints buffer is displayed
+  api.nvim_create_autocmd({ "BufWinEnter", "WinEnter" }, {
+    buffer = self.buf,
+    callback = function()
+      self._tree:render()
+    end,
+  })
+
+  -- Refresh on FocusGained if visible
+  api.nvim_create_autocmd("FocusGained", {
+    callback = function()
+      if is_buf_visible() then
+        self._tree:render()
+      end
+    end,
+  })
+
+  -- Hook toggle_breakpoint to refresh breakpoints list (works without session)
+  local orig_toggle = dap.toggle_breakpoint
+  dap.toggle_breakpoint = function(...)
+    local result = orig_toggle(...)
+    vim.schedule(function()
+      if is_buf_visible() then
+        self._tree:render()
+      end
+    end)
+    return result
+  end
+
+  -- Hook set_breakpoint to refresh breakpoints list
+  local orig_set = dap.set_breakpoint
+  dap.set_breakpoint = function(...)
+    local result = orig_set(...)
+    vim.schedule(function()
+      if is_buf_visible() then
+        self._tree:render()
+      end
+    end)
+    return result
+  end
+
+  -- Hook clear_breakpoints to refresh breakpoints list
+  local orig_clear = dap.clear_breakpoints
+  dap.clear_breakpoints = function(...)
+    local result = orig_clear(...)
+    vim.schedule(function()
+      if is_buf_visible() then
+        self._tree:render()
+      end
+    end)
+    return result
   end
 
   return self
