@@ -129,6 +129,14 @@ function Breakpoints.new()
     self._tree:render()
   end
 
+  -- Refresh when breakpoints buffer is displayed (works without session)
+  api.nvim_create_autocmd("BufWinEnter", {
+    buffer = self.buf,
+    callback = function()
+      self._tree:render()
+    end,
+  })
+
   return self
 end
 
