@@ -58,7 +58,7 @@ local sidepanel = {
   hlgroup = "STRING",
   mappings = {
     {
-      key = "u",
+      key = "L",
       action = function()
         local state = require("debugmaster.state")
         state.sidepanel:toggle()
